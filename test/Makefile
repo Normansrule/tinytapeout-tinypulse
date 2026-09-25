@@ -1,0 +1,63 @@
+# Makefile — test and check TinyPulse-Serial.
+#
+#   make            cocotb + Icarus, the Tiny Tapeout standard flow
+#   make sim        the self-checking Icarus testbenches (no cocotb needed)
+#   make lint       Verilator -Wall
+#   make synth      Yosys elaboration and flip-flop count
+#   make area LIB=/path/to/sky130_fd_sc_hd__tt_025C_1v80.lib
+#                   REAL sky130 cell area against every tile size
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC = ../src
+
+RTL  = $(SRC)/tp_pkg.sv
+RTL += $(SRC)/sync/sync_timebase.sv
+RTL += $(SRC)/sync/sync_capture.sv
+RTL += $(SRC)/sync/sync_event_fifo.sv
+RTL += $(SRC)/sync/sync_compare.sv
+RTL += $(SRC)/sync/sync_unit.sv
+RTL += $(SRC)/uart/tp_uart_rx.sv
+RTL += $(SRC)/uart/tp_uart_tx.sv
+RTL += $(SRC)/uart/tp_host_uart.sv
+RTL += $(SRC)/tp_sync_soc.sv
+RTL += $(SRC)/tt_um_normansrule_tinypulse_serial.sv
+
+VERILOG_SOURCES = $(RTL) tb.v
+COMPILE_ARGS += -g2012
+TOPLEVEL = tb
+MODULE   = test
+
+.PHONY: sim lint synth area uart clean-sim
+
+sim: uart
+	@echo ""
+	@echo "all testbenches finished — check for FAILED above"
+
+uart:
+	iverilog -g2012 -o tb_uart.vvp -s tb_uart $(RTL) tb_uart.sv
+	vvp tb_uart.vvp
+
+# Two waivers, both deliberate:
+#   IMPORTSTAR   file-scope `import tp_pkg::*;` is the only import form
+#                Yosys's native frontend parses, and Yosys hardens the chip.
+#   UNUSEDPARAM  tp_pkg is shared with the full chip and carries the RV32I
+#                and Xpulse constants its core needs. This build has no
+#                core, so it intentionally uses none of them.
+lint:
+	verilator --lint-only -Wall -Wno-UNUSEDPARAM --timing $(RTL) --top-module tt_um_normansrule_tinypulse_serial
+
+synth:
+	cd .. && yosys -s syn/synth_check.ys
+	@grep -E "DFF|cells" ../syn/stat.txt | head -20
+
+area:
+	cd .. && bash syn/area_sky130.sh $(LIB)
+
+clean-sim:
+	rm -f *.vvp *.vcd
+
+COCOTB_MAKEFILES := $(shell cocotb-config --makefiles 2>/dev/null)
+ifneq ($(COCOTB_MAKEFILES),)
+include $(COCOTB_MAKEFILES)/Makefile.sim
+endif

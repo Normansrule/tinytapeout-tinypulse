@@ -1,0 +1,65 @@
+# info.yaml — Tiny Tapeout metadata for TinyPulse-Serial.
+#
+# `tiles: "1x2"` is an estimate, not a confirmed fit. Counting every gate
+# and calibrating to sky130 cell sizes puts this configuration at roughly
+# half the usable area of a 1x2 tile, which is comfortable. A 1x1 was
+# measured at 96-120% for the same feature set — the serial host port
+# alone is about 38% of a 1x1 tile — so 1x1 is not achievable here.
+#
+# Confirm against your own PDK before ordering:
+#     cd test && make area LIB=/path/to/sky130_fd_sc_hd__tt_025C_1v80.lib
+
+project:
+  title:        "TinyPulse-Serial serial timestamping unit"
+  author:       "Aleksander Norman"
+  discord:      ""
+  description:  "Hardware event timestamping and zero-jitter deadline triggers, controlled over a UART from any USB serial port"
+  language:     "SystemVerilog"
+  clock_hz:     50000000
+
+  tiles:        "1x2"
+
+  top_module:   "tt_um_normansrule_tinypulse_serial"
+
+  source_files:
+    - "tp_pkg.sv"
+    - "sync/sync_timebase.sv"
+    - "sync/sync_capture.sv"
+    - "sync/sync_event_fifo.sv"
+    - "sync/sync_compare.sv"
+    - "sync/sync_unit.sv"
+    - "uart/tp_uart_rx.sv"
+    - "uart/tp_uart_tx.sv"
+    - "uart/tp_host_uart.sv"
+    - "tp_sync_soc.sv"
+    - "tt_um_normansrule_tinypulse_serial.sv"
+
+pinout:
+  ui[0]:  "CAP0 capture input"
+  ui[1]:  "CAP1 capture input"
+  ui[2]:  "CAP2 capture input"
+  ui[3]:  "RX serial in from host (Tiny Tapeout UART pin)"
+  ui[4]:  "CAP3 capture input"
+  ui[5]:  "CAP4 capture input"
+  ui[6]:  "CAP5 capture input"
+  ui[7]:  "CAP6 capture input"
+
+  uo[0]:  "TRIG0 deadline trigger output"
+  uo[1]:  "TRIG1 deadline trigger output"
+  uo[2]:  "TRIG2 deadline trigger output"
+  uo[3]:  "EVT event queue not empty"
+  uo[4]:  "TX serial out to host (Tiny Tapeout UART pin)"
+  uo[5]:  "OVF event queue overflowed (sticky)"
+  uo[6]:  "HB heartbeat, timebase bit 23"
+  uo[7]:  "EVTP one-clock pulse per captured event"
+
+  uio[0]: "CAP7 capture input"
+  uio[1]: "ACT serial activity"
+  uio[2]: "EVCH0 queued event channel bit 0"
+  uio[3]: "EVCH1 queued event channel bit 1"
+  uio[4]: "EVCH2 queued event channel bit 2"
+  uio[5]: "EVED queued event edge (1 = rising)"
+  uio[6]: "EVQ0 queue occupancy bit 0"
+  uio[7]: "EVQ1 queue occupancy bit 1"
+
+yaml_version: 6
