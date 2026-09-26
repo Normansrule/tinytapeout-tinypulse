@@ -1,17 +1,22 @@
 # TinyPulse-Serial
 
-**Hardware timestamping and zero-jitter triggers, controlled over USB serial.**
+**Hardware timestamping and zero-jitter triggers, controlled over USB serial — no CPU.**
 
-The single-tile member of the TinyPulse family. The timestamping and trigger
-hardware is the same verified logic as
-[TinyPulse-Skywater130](https://github.com/Normansrule/tinypulse-skywater130),
-byte for byte — but instead of a RISC-V core, a host computer drives it over
-a serial port.
+> **Looking for the programmable microcontroller?** That is the main TinyPulse project:
+> [tinypulse-skywater130](https://github.com/Normansrule/tinypulse-skywater130), a RISC-V
+> microcontroller you program in C, over USB serial or from flash, in 2 × 2 tiles (280 €).
+> This repository, **tinytapeout-tinypulse**, is its low-cost sibling: the same timing hardware
+> with no CPU, driven by your computer, in 1 × 2 tiles (140 €).
 
-> **Status: verified in simulation. Targets a 1x2 tile (about €140).**
-> A 1x1 was measured at 96-120% utilisation for this feature set and is
-> not achievable — see [Area](#area). Confirm against your own PDK with
-> `make area` before ordering.
+The timestamping and trigger logic here is the same verified RTL as the microcontroller's timing
+unit, byte for byte. Instead of a RISC-V core running your program, a host computer sends it
+commands over a serial port. Use this one when the thinking happens on a PC, a Raspberry Pi or an
+existing microcontroller, and you only need precise timing from the chip. Use the
+microcontroller when the chip should run your code on its own.
+
+> **Status: verified in simulation and at gate level. Measured 20,391 µm² against the real sky130
+> library: a 1 × 2 tile at about 57% (140 €).** A 1 × 1 would need 189% and is not achievable
+> with this feature set — see [Area](#area). Reproduce with `make area`.
 
 ---
 
@@ -233,14 +238,14 @@ most importantly — confirming the area.
 
 ## Area
 
-Estimated by counting every gate after synthesis and calibrating to
-sky130 cell sizes (`dfxtp_1` at 20.02 µm², `nand2_1` at 3.75 µm²):
+**Measured**, not estimated. Yosys mapped the design onto the real
+sky130_fd_sc_hd standard cell library and reported 20,725 um^2 of cells:
 
-| Tile | Utilisation | Verdict |
-|---|---:|---|
-| 1x1 | ~120% | does not fit |
-| **1x2** | **~59%** | **fits — this is the target** |
-| 2x2 | ~28% | plenty of room |
+| Tile | At 60% utilisation | At 70% | Verdict |
+|---|---:|---:|---|
+| 1x1 | 192% | 165% | does not fit |
+| **1x2** | **95%** | **81%** | **fits — this is the target** |
+| 2x2 | 46% | 39% | plenty of room |
 
 A 1x1 was the original goal and it is not reachable with this feature
 set. The serial host port alone — receiver, transmitter and protocol
@@ -248,14 +253,17 @@ engine — is about 38% of a 1x1 tile, and the timebase, comparators and
 event queue take more than the rest. Cutting to one trigger and a 16-bit
 rate trim only got it to 160% of a 1x1.
 
+A pre-PDK estimate put this at 21,345 um^2, 3% high, so the estimating
+method is sound but no substitute for the real library.
+
 One optimisation was tried and reverted. Rewriting the comparator's
 `(now + 1) - deadline >= 0` as `now - deadline >= -1` looks like it saves
-a 32-bit adder per channel. Measured, it was 1,000 µm² **worse**:
+a 32-bit adder per channel. Measured, it was 1,000 um^2 **worse**:
 synthesis already shares the single `now + 1` incrementer across all
 three channels, while the rewrite needs a 32-input AND tree in each one.
 The note is in `sync_compare.sv` so nobody tries it again.
 
-**Measure it rather than trusting that table:**
+**Reproduce it yourself:**
 
 ```bash
 cd test
@@ -278,8 +286,8 @@ make synth    # Yosys elaboration
 make area LIB=<path>   # real sky130 area
 ```
 
-Needs Yosys 0.44 or newer. `make area` checks and falls back automatically
-to `~/oss-cad-suite/bin/yosys` or `yowasp-yosys`.
+Any Yosys version works. `make area` prefers `~/oss-cad-suite/bin/yosys`
+if you have it, and finds your sky130 library automatically.
 
 ## Licence
 

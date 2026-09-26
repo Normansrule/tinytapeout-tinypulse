@@ -1,6 +1,7 @@
 # synth_check.ys — technology-independent elaboration and flip-flop count.
-# Requires Yosys 0.44+ (file-scope import). For real sky130 area use
+# Works with any Yosys version. For real sky130 cell area use
 # syn/area_sky130.sh instead.
+
 read_verilog -sv src/tp_pkg.sv
 read_verilog -sv src/sync/sync_timebase.sv
 read_verilog -sv src/sync/sync_capture.sv

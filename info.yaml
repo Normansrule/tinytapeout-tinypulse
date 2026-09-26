@@ -1,13 +1,16 @@
 # info.yaml — Tiny Tapeout metadata for TinyPulse-Serial.
 #
-# `tiles: "1x2"` is an estimate, not a confirmed fit. Counting every gate
-# and calibrating to sky130 cell sizes puts this configuration at roughly
-# half the usable area of a 1x2 tile, which is comfortable. A 1x1 was
-# measured at 96-120% for the same feature set — the serial host port
-# alone is about 38% of a 1x1 tile — so 1x1 is not achievable here.
+# `tiles: "1x2"` is MEASURED. Yosys mapped this design onto the real
+# sky130_fd_sc_hd library and reported 20,725 um^2 of standard cells:
 #
-# Confirm against your own PDK before ordering:
-#     cd test && make area LIB=/path/to/sky130_fd_sc_hd__tt_025C_1v80.lib
+#     1x1   192% at 60% utilisation   does not fit
+#     1x2    95% at 60%, 81% at 70%    fits
+#     2x2    46% at 60%              plenty of room
+#
+# The serial host port alone is about 38% of a 1x1 tile, which is why 1x1
+# was never reachable with this feature set.
+#
+# Reproduce: cd test && make area
 
 project:
   title:        "TinyPulse-Serial serial timestamping unit"

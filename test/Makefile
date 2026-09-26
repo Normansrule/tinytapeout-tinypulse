@@ -23,10 +23,21 @@ RTL += $(SRC)/uart/tp_host_uart.sv
 RTL += $(SRC)/tp_sync_soc.sv
 RTL += $(SRC)/tt_um_normansrule_tinypulse_serial.sv
 
-VERILOG_SOURCES = $(RTL) tb.v
+# cocotb: RTL by default; `make GATES=yes` runs the same tests on the
+# gate-level netlist that Tiny Tapeout's CI copies in after hardening.
+ifneq ($(GATES),yes)
+SIM_BUILD        = sim_build/rtl
+VERILOG_SOURCES  = $(RTL) tb.v
+else
+SIM_BUILD        = sim_build/gl
+COMPILE_ARGS    += -DGL_TEST -DFUNCTIONAL -DUSE_POWER_PINS -DSIM -DUNIT_DELAY=\#1
+VERILOG_SOURCES  = $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
+VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
+VERILOG_SOURCES += $(PWD)/gate_level_netlist.v tb.v
+endif
 COMPILE_ARGS += -g2012
 TOPLEVEL = tb
-MODULE   = test
+COCOTB_TEST_MODULES = test
 
 .PHONY: sim lint synth area uart clean-sim
 
@@ -44,6 +55,9 @@ uart:
 #   UNUSEDPARAM  tp_pkg is shared with the full chip and carries the RV32I
 #                and Xpulse constants its core needs. This build has no
 #                core, so it intentionally uses none of them.
+# One waiver: tp_pkg is shared with the full chip and carries the RV32I
+# and Xpulse constants its core needs. This build has no core, so it
+# intentionally uses none of them.
 lint:
 	verilator --lint-only -Wall -Wno-UNUSEDPARAM --timing $(RTL) --top-module tt_um_normansrule_tinypulse_serial
 

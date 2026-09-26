@@ -1,3 +1,4 @@
+import os
 # test.py — cocotb tests for TinyPulse-Serial.
 #
 # These drive the chip the way the demo board does: a serial line into
@@ -89,6 +90,9 @@ async def host_write(dut, addr, value):
     assert ack == RSP_ACK, f"write to {addr} not acknowledged: 0x{ack:02X}"
 
 
+GL = os.environ.get("GATES") == "yes"   # no internal hierarchy after hardening
+
+
 @cocotb.test()
 async def test_ping(dut):
     """The link answers and identifies itself."""
@@ -137,7 +141,7 @@ async def test_capture_over_serial(dut):
     assert (st >> 4) & 1, "reading the event register should have popped it"
 
 
-@cocotb.test()
+@cocotb.test(skip=GL)   # reads the internal timebase; pins-only in GL runs
 async def test_trigger_lands_on_exact_tick(dut):
     """The claim the chip exists for, driven entirely over serial.
 
