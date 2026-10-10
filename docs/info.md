@@ -2,6 +2,17 @@
 
 **Hardware timestamping and zero-jitter triggers, controlled over USB serial — no CPU.**
 
+![Tiny Tapeout 1x2](https://img.shields.io/badge/Tiny_Tapeout-1%C3%972_tiles-3ddc97)
+![SkyWater 130 nm](https://img.shields.io/badge/SkyWater-130_nm-ff9f1c)
+![checks](https://img.shields.io/badge/serial_checks-30_passing-4f8cff)
+![cocotb](https://img.shields.io/badge/cocotb-5%2F5-4f8cff)
+![FPGA Basys 3](https://img.shields.io/badge/FPGA-Basys_3_(Artix--7)-e34c26)
+
+![Zooming from TinyPulse-Serial's tiles down to single transistors](images/zoom.webp)
+
+<sub>From the 1 × 2 tile down to single transistors: the design's ~2,700 real sky130 cells, drawn
+from SkyWater's own cell geometry with KLayout (`docs/tools/zoom_animation.py`).</sub>
+
 > **Looking for the programmable microcontroller?** That is the main TinyPulse project:
 > [tinypulse-skywater130](https://github.com/Normansrule/tinypulse-skywater130), a RISC-V
 > microcontroller you program in C, over USB serial or from flash, in 2 × 2 tiles (280 €).
@@ -14,11 +25,54 @@ commands over a serial port. Use this one when the thinking happens on a PC, a R
 existing microcontroller, and you only need precise timing from the chip. Use the
 microcontroller when the chip should run your code on its own.
 
-> **Status: verified in simulation and at gate level. Measured 20,391 µm² against the real sky130
-> library: a 1 × 2 tile at about 57% (140 €).** A 1 × 1 would need 189% and is not achievable
-> with this feature set — see [Area](#area). Reproduce with `make area`.
+> **Status: verified in simulation and at gate level. Measured 20,400–21,300 µm² against the real
+> sky130 library (the range is between Yosys versions): a 1 × 2 tile (140 €), at about 60% of its
+> placeable area.** A 1 × 1 is not achievable with this feature set — see [Area](#area).
+> Reproduce with `make area`.
 
 ---
+
+**Contents:** [Status](#status) · [What it looks like](#what-it-looks-like) · [Run it on an FPGA today: Digilent Basys 3](#run-it-on-an-fpga-today-digilent-basys-3) · [Quick start](#quick-start) · [How you talk to it](#how-you-talk-to-it) · [Pin map](#pin-map) · [Serial protocol](#serial-protocol) · [Register map](#register-map) · [Host software](#host-software) · [Verification](#verification) · [Area](#area) · [Running the checks](#running-the-checks) · [Licence](#licence)
+
+## Status
+
+| | |
+|---|---|
+| ✅ **RTL simulation** | 30 checks on the serial host port (`cd test && make sim`), plus 5 cocotb tests from the pins only |
+| ✅ **FPGA (simulated)** | the whole Digilent Basys 3 design, driven like a PC at 115,200 baud: 7 checks (`make -C fpga/basys3 sim`) |
+| ✅ **Tiny Tapeout pre-flight** | CI's own project checker passes: docs, ports, build configuration |
+| ✅ **Docs** | every link, image, `make` target and script mentioned exists (`make docs`, part of `make sim`) |
+| ⏳ **Hardening** | runs on GitHub after a push (`gds` workflow); placement density set to 70 for this design |
+| ⏳ **FPGA board** | Vivado build and a real Basys 3: `make bit && make prog` in `fpga/basys3` |
+| ⏳ **Silicon** | after submission to a Tiny Tapeout shuttle |
+
+## What it looks like
+
+**From the board to the silicon.** The chip arrives in a QFN package on a carrier board that
+plugs into the demo board; inside, every project on the shuttle shares one die behind a
+multiplexer, and TinyPulse-Serial is one 1 × 2 block of tiles on it:
+
+![From the demo board to TinyPulse-Serial's tiles on the die](images/board_to_silicon.svg)
+
+**The tile, block by block.** Every cell of the synthesized design, placed by block inside the
+161.00 × 225.76 µm tile. The deadline comparators are the largest block; the UART is small:
+
+![Every real sky130 cell of TinyPulse-Serial, placed by block](images/layout_blocks.png)
+
+**One flip-flop, taken apart.** The design's 458 flip-flops are this cell. Its real manufacturing
+layers separate and rejoin:
+
+![One sky130 D flip-flop exploded into its manufacturing layers](images/flipflop_exploded.svg)
+
+The routed layout comes from the `gds` GitHub Actions run, which publishes it to this
+repository's GitHub Pages (enable Settings → Pages → Source: GitHub Actions).
+
+## Run it on an FPGA today: Digilent Basys 3
+
+The same RTL runs on a [Digilent Basys 3](../fpga/basys3/README.md) (Artix-7) with nothing attached.
+The board's USB port is the host link, so `sw/tpctl.py` works unchanged; the buttons are capture
+inputs and the LEDs show the triggers and the event queue. `make sim` in `fpga/basys3` checks the
+whole board design first (7 of 7), and `make bit && make prog` loads it with Vivado.
 
 ## Quick start
 
@@ -42,7 +96,7 @@ for ev in tp.events():                          # stream timestamps
     print(ev)
 ```
 
-Wiring, voltages and bring-up order: **[docs/HOOKUP.md](docs/HOOKUP.md)**.
+Wiring, voltages and bring-up order: **[docs/HOOKUP.md](../docs/HOOKUP.md)**.
 
 ---
 
@@ -77,6 +131,16 @@ clock gives 57,600 baud.
 ---
 
 ## Pin map
+
+**Every pin, where it really is.** All 43 pins sit on metal 4 along the tile's top edge, at the
+exact positions from Tiny Tapeout's 1 × 2 template; the band names each one:
+
+![All 43 pins of the 1x2 tile at their real positions](images/pin_map.svg)
+
+**What each pin connects to:**
+
+![Every TinyPulse-Serial pin wired to the device it connects to](images/connections.svg)
+
 
 | Pin | Name | Dir | Function |
 |---|---|---|---|
@@ -238,14 +302,20 @@ most importantly — confirming the area.
 
 ## Area
 
-**Measured**, not estimated. Yosys mapped the design onto the real
-sky130_fd_sc_hd standard cell library and reported 20,725 um^2 of cells:
+**Measured**, not estimated. Yosys maps the design onto the real sky130_fd_sc_hd standard cell
+library: 2,524 cells, 458 of them flip-flops, **20,400–21,300 µm²** depending on the Yosys version
+(about 20,400 with 0.52, 21,324 with 0.33). The table is the 21,324 µm² measurement:
 
 | Tile | At 60% utilisation | At 70% | Verdict |
 |---|---:|---:|---|
-| 1x1 | 192% | 165% | does not fit |
-| **1x2** | **95%** | **81%** | **fits — this is the target** |
-| 2x2 | 46% | 39% | plenty of room |
+| 1x1 | 198% | 170% | does not fit |
+| **1x2** | **98%** | **84%** | **fits — this is the target** |
+| 2x2 | 47% | 40% | plenty of room |
+
+That is about 60% of the 1 × 2 tile's **placeable** area (161.00 × 225.76 µm minus the placement
+margins), before the flow adds buffers. Tiny Tapeout's default placement density of 60 would sit
+at or below the design's own utilization and fail with `GPL-0302`, so `src/config.json` sets 70 —
+the same reasoning as the main TinyPulse repository, which uses 72.
 
 A 1x1 was the original goal and it is not reachable with this feature
 set. The serial host port alone — receiver, transmitter and protocol
@@ -283,7 +353,19 @@ cd test
 make sim      # the serial host port testbench
 make lint     # Verilator -Wall
 make synth    # Yosys elaboration
-make area LIB=<path>   # real sky130 area
+make area LIB=<path>   # real sky130 area: cells, flip-flops, fit per tile size
+make          # the cocotb tests, from the pins only (5 tests)
+make -C ../fpga/basys3 sim   # the whole Basys 3 board design (7 checks)
+```
+
+Regenerate the images (from the repository root):
+
+```bash
+python3 -m pip install klayout pillow
+python3 docs/tools/layout_preview.py ~/pdk/sky130A/libs.ref/sky130_fd_sc_hd    # cell-level layout
+python3 docs/tools/zoom_animation.py                                           # the zoom
+python3 docs/tools/exploded_cell.py ~/pdk/sky130A/libs.ref/sky130_fd_sc_hd "Every register in TinyPulse-serial is built from this cell."
+python3 docs/tools/silicon_views.py                                            # pin map, packaging, connections
 ```
 
 Any Yosys version works. `make area` prefers `~/oss-cad-suite/bin/yosys`

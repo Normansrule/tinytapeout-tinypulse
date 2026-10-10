@@ -1,0 +1,78 @@
+{
+  "tile": "1x2",
+  "tile_um": [
+    161.0,
+    225.76
+  ],
+  "total_cell_area_um2": 24197.0,
+  "utilization_of_core_area": 0.7173,
+  "instances": 2704,
+  "fill_instances": 3255,
+  "blocks": {
+    "Deadline comparators": 7480.9,
+    "Timebase + rate trim": 4523.1,
+    "Timing unit control": 4393.0,
+    "Event queue": 2528.7,
+    "Command interpreter": 2113.3,
+    "UART receiver": 1176.1,
+    "UART transmitter": 1054.8,
+    "Capture channels": 890.9,
+    "Glue": 36.3
+  },
+  "regions_um": {
+    "Deadline comparators": [
+      2.76,
+      2.72,
+      113.49,
+      91.89
+    ],
+    "Timebase + rate trim": [
+      2.76,
+      94.61,
+      113.49,
+      55.56
+    ],
+    "Timing unit control": [
+      116.25,
+      2.72,
+      41.53,
+      147.46
+    ],
+    "Event queue": [
+      2.76,
+      150.18,
+      50.26,
+      70.14
+    ],
+    "Command interpreter": [
+      53.02,
+      150.18,
+      42.0,
+      70.14
+    ],
+    "UART receiver": [
+      95.02,
+      150.18,
+      33.09,
+      49.55
+    ],
+    "UART transmitter": [
+      128.11,
+      150.18,
+      29.67,
+      49.55
+    ],
+    "Capture channels": [
+      95.02,
+      199.73,
+      60.31,
+      20.59
+    ],
+    "Glue": [
+      155.32,
+      199.73,
+      2.46,
+      20.59
+    ]
+  }
+}

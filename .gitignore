@@ -1,9 +1,0 @@
-*.vvp
-*.vcd
-*.o
-*.elf
-*.bin
-sim_build/
-__pycache__/
-results.xml
-runs/

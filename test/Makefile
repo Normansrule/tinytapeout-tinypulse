@@ -41,7 +41,7 @@ COCOTB_TEST_MODULES = test
 
 .PHONY: sim lint synth area uart clean-sim
 
-sim: uart
+sim: uart docs
 	@echo ""
 	@echo "all testbenches finished — check for FAILED above"
 
@@ -75,3 +75,7 @@ COCOTB_MAKEFILES := $(shell cocotb-config --makefiles 2>/dev/null)
 ifneq ($(COCOTB_MAKEFILES),)
 include $(COCOTB_MAKEFILES)/Makefile.sim
 endif
+
+# every link, image, make target and script the docs mention must exist
+docs:
+	cd .. && python3 docs/tools/check_docs.py
